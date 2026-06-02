@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>FF Tournament</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#080b12;
+  --bg2:#0d1120;
+  --bg3:#111827;
+  --card:#13192a;
+  --card2:#1a2235;
+  --orange:#ff6b00;
+  --orange2:#ff8c00;
+  --gold:#ffd700;
+  --red:#ff2d2d;
+  --green:#00ff88;
+  --blue:#00b4ff;
+  --text:#e8eaf0;
+  --muted:#6b7a99;
+  --border:rgba(255,107,0,0.2);
+  --glow:0 0 20px rgba(255,107,0,0.3);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;overflow:hidden}
+#root{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative;overflow:hidden}
+
+/* SCREENS */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;transform:translateX(30px)}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0)}
+
+/* SCROLLABLE CONTENT */
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:80px}
+.scroll-area::-webkit-scrollbar{width:2px}
+.scroll-area::-webkit-scrollbar-track{background:transparent}
+.scroll-area::-webkit-scrollbar-thumb{background:var(--orange);border-radius:2px}
+
+/* BOTTOM NAV */
+#bottom-nav{position:absolute;bottom:0;left:0;right:0;height:68px;background:rgba(13,17,32,0.97);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;backdrop-filter:blur(10px);z-index:100}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:8px 16px;position:relative;transition:all .2s}
+.nav-icon{font-size:22px;transition:all .2s}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--muted);transition:all .2s;text-transform:uppercase}
+.nav-item.active .nav-label{color:var(--orange)}
+.nav-item.active .nav-icon{filter:drop-shadow(0 0 6px var(--orange))}
+.nav-item.active::after{content:'';position:absolute;bottom:-1px;left:20%;right:20%;height:2px;background:var(--orange);border-radius:2px 2px 0 0;box-shadow:0 0 8px var(--orange)}
+.nav-badge{position:absolute;top:6px;right:10px;width:8px;height:8px;background:var(--red);border-radius:50%;border:1.5px solid var(--bg2)}
+
+/* HEADER */
+.page-header{padding:16px 16px 0;position:relative;z-index:10}
+.header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.page-title{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;letter-spacing:.05em;color:#fff}
+.header-coin{display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:5px 12px}
+.coin-icon{font-size:14px}
+.coin-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--gold)}
+
+/* FIRE BANNER */
+.fire-banner{margin:16px;border-radius:16px;background:linear-gradient(135deg,#1a0a00,#2d1200,#1a0a00);border:1px solid rgba(255,107,0,0.4);padding:20px;position:relative;overflow:hidden}
+.fire-banner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 100%,rgba(255,107,0,0.25) 0%,transparent 70%)}
+.fire-banner::after{content:'🔥';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);font-size:40px;filter:blur(8px);opacity:.5}
+.banner-booyah{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;color:var(--orange);text-shadow:0 0 20px rgba(255,107,0,0.8),0 0 40px rgba(255,107,0,0.4);letter-spacing:.1em;position:relative}
+.banner-sub{font-size:13px;color:rgba(255,200,100,.7);letter-spacing:.15em;text-transform:uppercase;margin-top:2px;position:relative}
+.player-info{display:flex;align-items:center;gap:10px;margin-top:14px;position:relative}
+.avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--orange),#ff2d2d);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;border:2px solid var(--orange);box-shadow:0 0 12px rgba(255,107,0,0.5)}
+.player-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#fff}
+.player-uid{font-size:11px;color:var(--muted)}
+
+/* STATS */
+.stats-row{display:flex;gap:10px;margin:0 16px 16px}
+.stat-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center}
+.stat-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--orange)}
+.stat-label{font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+
+/* SECTION TITLE */
+.section-title{display:flex;align-items:center;gap:8px;margin:0 16px 10px;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange)}
+.section-title::before{content:'';width:3px;height:14px;background:var(--orange);border-radius:2px;box-shadow:0 0 6px var(--orange)}
+
+/* TOURNAMENT CARDS */
+.t-card{margin:0 16px 12px;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
+.t-card:active{transform:scale(.98)}
+.t-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--orange),transparent);opacity:0;transition:opacity .2s}
+.t-card:hover::before{opacity:1}
+.t-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px}
+.t-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff;letter-spacing:.03em}
+.mode-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.05em}
+.mode-solo{background:rgba(0,180,255,.15);color:var(--blue);border:1px solid rgba(0,180,255,.3)}
+.mode-duo{background:rgba(255,107,0,.15);color:var(--orange);border:1px solid rgba(255,107,0,.3)}
+.mode-squad{background:rgba(255,45,45,.15);color:var(--red);border:1px solid rgba(255,45,45,.3)}
+.t-card-body{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
+.prize-row{display:flex;align-items:center;justify-content:space-between}
+.prize-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.prize-val{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--gold);text-shadow:0 0 10px rgba(255,215,0,.4)}
+.entry-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:600;color:var(--green)}
+.slots-row{display:flex;align-items:center;gap:8px}
+.slots-bar{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.slots-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange2));border-radius:2px;transition:width .5s}
+.slots-text{font-size:11px;color:var(--muted);white-space:nowrap;font-family:'Rajdhani',sans-serif}
+.t-card-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,0,0,.3);border-top:1px solid var(--border)}
+.countdown{font-family:'Orbitron',monospace;font-size:12px;color:var(--red);letter-spacing:.05em}
+.diff-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%)}
+.diff-beginner{background:rgba(0,255,136,.15);color:var(--green);border:1px solid rgba(0,255,136,.3)}
+.diff-pro{background:rgba(255,107,0,.15);color:var(--orange);border:1px solid rgba(255,107,0,.3)}
+.diff-elite{background:rgba(255,45,45,.15);color:var(--red);border:1px solid rgba(255,45,45,.3)}
+.join-btn{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;padding:7px 18px;border-radius:8px;border:none;cursor:pointer;letter-spacing:.05em;position:relative;overflow:hidden;transition:all .2s}
+.join-btn.can-join{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#000;box-shadow:0 4px 15px rgba(255,107,0,.4)}
+.join-btn.can-join:active{transform:scale(.95)}
+.join-btn.registered{background:rgba(0,255,136,.15);color:var(--green);border:1px solid rgba(0,255,136,.4)}
+.join-btn.full{background:rgba(255,255,255,.05);color:var(--muted);cursor:not-allowed}
+
+/* FILTER TABS */
+.filter-tabs{display:flex;gap:6px;padding:12px 16px;overflow-x:auto}
+.filter-tabs::-webkit-scrollbar{display:none}
+.filter-tab{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .2s;letter-spacing:.05em}
+.filter-tab.active{background:linear-gradient(135deg,rgba(255,107,0,.2),rgba(255,107,0,.1));border-color:var(--orange);color:var(--orange);box-shadow:0 0 10px rgba(255,107,0,.2)}
+
+/* LEADERBOARD */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:20px 16px;height:140px}
+.podium-item{display:flex;flex-direction:column;align-items:center;flex:1}
+.podium-avatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;border:2px solid;margin-bottom:6px}
+.podium-rank{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+.podium-name{font-size:11px;font-weight:600;color:#fff;margin-bottom:2px}
+.podium-pts{font-family:'Orbitron',monospace;font-size:11px}
+.podium-base{border-radius:8px 8px 0 0;width:100%;display:flex;align-items:center;justify-content:center}
+.podium-1 .podium-avatar{background:linear-gradient(135deg,#ffd700,#ff8c00);border-color:#ffd700;box-shadow:0 0 16px rgba(255,215,0,.5)}
+.podium-1 .podium-rank{color:var(--gold)}
+.podium-1 .podium-pts{color:var(--gold)}
+.podium-1 .podium-base{background:linear-gradient(135deg,rgba(255,215,0,.2),rgba(255,215,0,.05));height:80px;border:1px solid rgba(255,215,0,.3)}
+.podium-2 .podium-avatar{background:linear-gradient(135deg,#c0c0c0,#808080);border-color:#c0c0c0;box-shadow:0 0 12px rgba(192,192,192,.3)}
+.podium-2 .podium-rank{color:#c0c0c0}
+.podium-2 .podium-pts{color:#c0c0c0}
+.podium-2 .podium-base{background:linear-gradient(135deg,rgba(192,192,192,.15),rgba(192,192,192,.03));height:60px;border:1px solid rgba(192,192,192,.2)}
+.podium-3 .podium-avatar{background:linear-gradient(135deg,#cd7f32,#8b4513);border-color:#cd7f32;box-shadow:0 0 10px rgba(205,127,50,.3)}
+.podium-3 .podium-rank{color:#cd7f32}
+.podium-3 .podium-pts{color:#cd7f32}
+.podium-3 .podium-base{background:linear-gradient(135deg,rgba(205,127,50,.15),rgba(205,127,50,.03));height:45px;border:1px solid rgba(205,127,50,.2)}
+
+.lb-row{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:0 16px 6px;background:var(--card);border:1px solid var(--border);border-radius:10px;transition:all .2s}
+.lb-row.me{background:rgba(255,107,0,.08);border-color:rgba(255,107,0,.4)}
+.lb-rank{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--muted);width:24px;text-align:center}
+.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.lb-info{flex:1}
+.lb-name{font-size:13px;font-weight:600;color:#fff}
+.lb-detail{font-size:10px;color:var(--muted)}
+.lb-pts{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--orange)}
+
+/* PROFILE */
+.profile-card{margin:16px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;position:relative;overflow:hidden}
+.profile-card::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,107,0,.15),transparent);border-radius:50%}
+.big-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--red));display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;border:3px solid var(--orange);box-shadow:0 0 20px rgba(255,107,0,.4);margin:0 auto 12px}
+.profile-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:#fff;text-align:center}
+.profile-uid{font-size:12px;color:var(--muted);text-align:center;margin-top:4px}
+.level-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);border-radius:20px;padding:3px 10px;font-family:'Orbitron',monospace;font-size:10px;color:var(--gold);margin:8px auto 0;display:flex;justify-content:center;width:fit-content}
+
+.profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px}
+.ps-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.ps-val{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:var(--orange)}
+.ps-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+
+.wallet-card{margin:0 16px 16px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+.wallet-bal{font-family:'Orbitron',monospace;font-size:28px;font-weight:700;color:var(--gold);text-shadow:0 0 15px rgba(255,215,0,.3)}
+.wallet-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.wallet-btns{display:flex;gap:8px;margin-top:14px}
+.wallet-btn{flex:1;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;padding:10px;border-radius:10px;border:none;cursor:pointer;letter-spacing:.05em;transition:all .2s}
+.wallet-btn.add{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#000;box-shadow:0 4px 12px rgba(255,107,0,.35)}
+.wallet-btn.withdraw{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border)}
+
+.history-item{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:0 16px 6px;background:var(--card);border:1px solid var(--border);border-radius:10px}
+.hist-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.hist-info{flex:1}
+.hist-name{font-size:13px;font-weight:600;color:#fff}
+.hist-detail{font-size:10px;color:var(--muted)}
+.hist-earn{font-family:'Orbitron',monospace;font-size:12px;font-weight:700}
+.hist-earn.pos{color:var(--green)}
+.hist-earn.neg{color:var(--red)}
+
+/* MODAL */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(4px)}
+#modal-overlay.open{opacity:1;pointer-events:all}
+#modal-box{width:100%;max-width:430px;margin:0 auto;background:var(--card2);border-radius:24px 24px 0 0;border:1px solid var(--border);border-bottom:none;padding:24px;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+#modal-overlay.open #modal-box{transform:translateY(0)}
+.modal-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.modal-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.modal-row:last-of-type{border-bottom:none}
+.modal-key{font-size:13px;color:var(--muted)}
+.modal-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff}
+.modal-btns{display:flex;gap:10px;margin-top:20px}
+.modal-btn{flex:1;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;padding:13px;border-radius:12px;border:none;cursor:pointer;letter-spacing:.05em;transition:all .2s}
+.modal-btn.confirm{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#000;box-shadow:0 4px 15px rgba(255,107,0,.4)}
+.modal-btn.confirm:active{transform:scale(.97)}
+.modal-btn.cancel{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
+
+/* TOAST */
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--card2);border:1px solid var(--border);border-radius:30px;padding:10px 20px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;z-index:300;transition:transform .3s cubic-bezier(.4,0,.2,1);white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.success{border-color:rgba(0,255,136,.4);color:var(--green)}
+#toast.error{border-color:rgba(255,45,45,.4);color:var(--red)}
+#toast.info{border-color:rgba(255,107,0,.4);color:var(--orange)}
+
+/* DETAIL SCREEN */
+.detail-banner{margin:12px 16px;border-radius:16px;background:linear-gradient(135deg,#1a0800,#2d1500,#1a0800);border:1px solid rgba(255,107,0,.5);padding:24px 20px;position:relative;overflow:hidden;text-align:center}
+.detail-banner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(255,107,0,.2) 0%,transparent 70%)}
+.detail-t-name{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;letter-spacing:.05em;position:relative}
+.detail-mode{font-size:12px;color:var(--orange);letter-spacing:.2em;text-transform:uppercase;margin-top:4px;position:relative}
+
+.prize-table{margin:0 16px 16px;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.prize-header{padding:12px 16px;background:rgba(255,215,0,.08);border-bottom:1px solid var(--border);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.1em}
+.prize-row-item{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);gap:12px}
+.prize-place{font-size:18px}
+.prize-place-name{flex:1;font-size:13px;font-weight:600;color:#fff}
+.prize-amount{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--gold)}
+
+.room-card{margin:0 16px 16px;background:var(--card);border:1px solid rgba(0,255,136,.3);border-radius:16px;padding:16px}
+.room-label{font-family:'Orbitron',monospace;font-size:10px;color:var(--green);letter-spacing:.1em;margin-bottom:10px}
+.room-field{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.room-field-label{font-size:11px;color:var(--muted)}
+.room-field-val{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#fff;letter-spacing:.1em}
+.copy-btn{font-size:12px;cursor:pointer;padding:2px 6px;background:rgba(255,107,0,.15);border-radius:4px;color:var(--orange);border:none;font-family:'Rajdhani',sans-serif;font-weight:600}
+
+.rules-card{margin:0 16px 16px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+.rules-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--orange);letter-spacing:.1em;margin-bottom:10px}
+.rule-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-size:13px;color:var(--muted);line-height:1.4}
+.rule-item::before{content:'▶';color:var(--orange);font-size:8px;margin-top:3px;flex-shrink:0}
+
+.back-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .2s;flex-shrink:0}
+.back-btn:active{transform:scale(.9)}
+
+/* ACHIEVEMENTS */
+.achievements{display:flex;gap:8px;padding:0 16px 16px;overflow-x:auto}
+.achievements::-webkit-scrollbar{display:none}
+.ach-item{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:60px}
+.ach-icon{width:48px;height:48px;border-radius:12px;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px}
+.ach-icon.earned{border-color:var(--gold);box-shadow:0 0 10px rgba(255,215,0,.3)}
+.ach-name{font-size:9px;color:var(--muted);text-align:center;line-height:1.2}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.live-dot{width:8px;height:8px;background:var(--red);border-radius:50%;animation:pulse 1s ease infinite;display:inline-block;margin-right:4px}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+.shimmer{background:linear-gradient(90deg,var(--orange),#fff,var(--orange));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s linear infinite}
+</style>
+</head>
+<body>
+<div id="root">
+  <!-- HOME SCREEN -->
+  <div class="screen active" id="screen-home">
+    <div class="page-header">
+      <div class="header-row">
+        <div class="page-title">FF <span class="shimmer">TOURNAMENT</span></div>
+        <div class="header-coin"><span class="coin-icon">🪙</span><span class="coin-val" id="coin-display">500</span></div>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="fire-banner">
+        <div class="banner-booyah">BOOYAH! 🔥</div>
+        <div class="banner-sub">Welcome back, Survivor</div>
+        <div class="player-info">
+          <div class="avatar">⚡</div>
+          <div>
+            <div class="player-name" id="home-player-name">PhantomX</div>
+            <div class="player-uid">UID: 4829301827</div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-val" id="stat-kills">247</div><div class="stat-label">Kills</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-matches">89</div><div class="stat-label">Matches</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-wr">34%</div><div class="stat-label">Win Rate</div></div>
+      </div>
+      <div class="section-title">ACTIVE TOURNAMENTS</div>
+      <div id="home-tournaments"></div>
+    </div>
+  </div>
+
+  <!-- TOURNAMENTS SCREEN -->
+  <div class="screen" id="screen-tournaments">
+    <div class="page-header">
+      <div class="header-row">
+        <div class="page-title">TOURNAMENTS</div>
+        <div class="header-coin"><span class="coin-icon">🪙</span><span class="coin-val" id="coin-display-2">500</span></div>
+      </div>
+    </div>
+    <div class="filter-tabs">
+      <div class="filter-tab active" data-filter="all">ALL</div>
+      <div class="filter-tab" data-filter="solo">SOLO</div>
+      <div class="filter-tab" data-filter="duo">DUO</div>
+      <div class="filter-tab" data-filter="squad">SQUAD</div>
+    </div>
+    <div class="scroll-area" id="tournament-list" style="padding-top:4px"></div>
+  </div>
+
+  <!-- DETAIL SCREEN -->
+  <div class="screen" id="screen-detail">
+    <div class="page-header" style="padding-bottom:8px">
+      <div class="header-row">
+        <div class="back-btn" id="back-btn">←</div>
+        <div class="page-title" id="detail-header-title">DETAIL</div>
+        <div style="width:36px"></div>
+      </div>
+    </div>
+    <div class="scroll-area" id="detail-content"></div>
+  </div>
+
+  <!-- LEADERBOARD SCREEN -->
+  <div class="screen" id="screen-leaderboard">
+    <div class="page-header">
+      <div class="header-row">
+        <div class="page-title">LEADERBOARD</div>
+        <div class="header-coin"><span class="coin-icon">🏆</span><span class="coin-val" style="color:var(--gold)">GLOBAL</span></div>
+      </div>
+    </div>
+    <div class="filter-tabs">
+      <div class="filter-tab active">GLOBAL</div>
+      <div class="filter-tab">WEEKLY</div>
+      <div class="filter-tab">TOURNAMENT</div>
+    </div>
+    <div class="scroll-area" id="leaderboard-content"></div>
+  </div>
+
+  <!-- PROFILE SCREEN -->
+  <div class="screen" id="screen-profile">
+    <div class="page-header">
+      <div class="header-row">
+        <div class="page-title">PROFILE</div>
+        <div style="font-size:20px;cursor:pointer">⚙️</div>
+      </div>
+    </div>
+    <div class="scroll-area" id="profile-content"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottom-nav">
+    <div class="nav-item active" data-screen="home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+    </div>
+    <div class="nav-item" data-screen="tournaments">
+      <span class="nav-icon">🏆</span>
+      <span class="nav-label">Events</span>
+      <span class="nav-badge"></span>
+    </div>
+    <div class="nav-item" data-screen="leaderboard">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Ranks</span>
+    </div>
+    <div class="nav-item" data-screen="profile">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profile</span>
+    </div>
+  </nav>
+
+  <!-- MODAL -->
+  <div id="modal-overlay">
+    <div id="modal-box">
+      <div class="modal-title" id="modal-title">Join Tournament?</div>
+      <div class="modal-sub" id="modal-sub">Confirm your entry</div>
+      <div id="modal-rows"></div>
+      <div class="modal-btns">
+        <button class="modal-btn cancel" id="modal-cancel">CANCEL</button>
+        <button class="modal-btn confirm" id="modal-confirm">JOIN NOW</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+</div>
+
+<script>
+const state={
+  coins:500,
+  currentScreen:'home',
+  filterMode:'all',
+  selectedTournament:null,
+  prevScreen:'home',
+  tournaments:[
+    {id:1,name:'BOOYAH CUP',mode:'squad',prize:5000,entry:100,slots:48,filled:41,diff:'elite',   state:'registering',roomId:'FF8829',roomPass:'BOOYAH',countdown:900},
+    {id:2,name:'HEADSHOT KINGS',mode:'solo',prize:2000,entry:50,slots:48,filled:31,diff:'pro',     state:'registering',roomId:'FF1122',roomPass:'HEAD50',countdown:3600},
+    {id:3,name:'PURGATORY SHOWDOWN',mode:'duo',prize:10000,entry:200,slots:48,filled:48,diff:'elite', state:'live',roomId:'FF9900',roomPass:'PURGE99',countdown:0},
+    {id:4,name:'CLASH SQUAD ELITE',mode:'squad',prize:3000,entry:100,slots:48,filled:22,diff:'pro',  state:'registering',roomId:'FF5544',roomPass:'CLASH11',countdown:7200},
+    {id:5,name:'LONE SURVIVOR',mode:'solo',prize:500,entry:0,slots:48,filled:15,diff:'beginner', state:'upcoming',roomId:'FF3311',roomPass:'LONE22',countdown:14400},
+    {id:6,name:'BERMUDA BLITZ',mode:'squad',prize:1500,entry:50,slots:48,filled:38,diff:'pro',    state:'registering',roomId:'FF7766',roomPass:'BLITZ77',countdown:1800},
+  ],
+  registered:new Set(),
+  leaderboard:[
+    {name:'DragonSlayer',kills:1240,wins:87,pts:9820,avatar:'🐉',color:'#ff6b00'},
+    {name:'PhantomX',    kills:1100,wins:76,pts:8940,avatar:'⚡',color:'#ff2d2d',me:true},
+    {name:'NightHawk',   kills:980, wins:71,pts:8210,avatar:'🦅',color:'#00b4ff'},
+    {name:'BloodHunter', kills:870, wins:65,pts:7600,avatar:'🩸',color:'#ff2d2d'},
+    {name:'ShadowStrike',kills:810, wins:58,pts:7100,avatar:'🗡️',color:'#8b5cf6'},
+    {name:'IronFist',    kills:750, wins:52,pts:6500,avatar:'👊',color:'#ff8c00'},
+    {name:'CrimsonAce',  kills:690, wins:47,pts:5900,avatar:'🎯',color:'#ef4444'},
+    {name:'StormBreaker',kills:640, wins:43,pts:5300,avatar:'⚡',color:'#00b4ff'},
+  ],
+  history:[
+    {name:'BOOYAH CUP S3',place:1,kills:8,earn:+800,icon:'🏆',color:'rgba(255,215,0,.15)'},
+    {name:'HEADSHOT KINGS',place:3,kills:5,earn:+200,icon:'🥉',color:'rgba(205,127,50,.15)'},
+    {name:'BERMUDA BLITZ',place:12,kills:2,earn:-50,icon:'💀',color:'rgba(255,45,45,.1)'},
+    {name:'LONE SURVIVOR',place:2,kills:6,earn:+350,icon:'🥈',color:'rgba(192,192,192,.1)'},
+    {name:'PURGATORY S1',place:7,kills:3,earn:-100,icon:'💀',color:'rgba(255,45,45,.1)'},
+  ]
+};
+
+const countdowns={};
+
+// UTILS
+function $(id){return document.getElementById(id);}
+function showToast(msg,type='info'){
+  const t=$('toast');
+  t.textContent=msg;
+  t.className='show '+type;
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.className='',2500);
+}
+
+function openModal(t){
+  state.selectedTournament=t;
+  $('modal-title').textContent='JOIN '+t.name;
+  $('modal-sub').textContent=t.entry===0?'Free entry — confirm your slot':'Confirm your entry and pay the fee';
+  $('modal-rows').innerHTML=`
+    <div class="modal-row"><span class="modal-key">Mode</span><span class="modal-val">${t.mode.toUpperCase()}</span></div>
+    <div class="modal-row"><span class="modal-key">Prize Pool</span><span class="modal-val" style="color:var(--gold)">🪙 ${t.prize.toLocaleString()}</span></div>
+    <div class="modal-row"><span class="modal-key">Entry Fee</span><span class="modal-val" style="color:var(--green)">${t.entry===0?'FREE':'🪙 '+t.entry}</span></div>
+    <div class="modal-row"><span class="modal-key">Your Balance</span><span class="modal-val">🪙 ${state.coins}</span></div>
+    <div class="modal-row"><span class="modal-key">After Join</span><span class="modal-val">🪙 ${state.coins-t.entry}</span></div>
+  `;
+  $('modal-confirm').disabled=state.coins<t.entry;
+  $('modal-confirm').style.opacity=state.coins<t.entry?'.4':'1';
+  $('modal-overlay').classList.add('open');
+}
+
+function closeModal(){$('modal-overlay').classList.remove('open');}
+
+$('modal-cancel').onclick=closeModal;
+$('modal-overlay').onclick=e=>{if(e.target===$('modal-overlay'))closeModal();};
+
+$('modal-confirm').onclick=()=>{
+  const t=state.selectedTournament;
+  if(!t||state.coins<t.entry)return;
+  state.coins-=t.entry;
+  state.registered.add(t.id);
+  t.filled=Math.min(t.slots,t.filled+1);
+  closeModal();
+  updateCoinDisplays();
+  renderAll();
+  showToast('🔥 Registered for '+t.name+'!','success');
+};
+
+function updateCoinDisplays(){
+  ['coin-display','coin-display-2'].forEach(id=>{
+    const el=$(id);
+    if(el)el.textContent=state.coins;
+  });
+}
+
+// FORMAT
+function fmtTime(s){
+  if(s<=0)return'<span class="live-dot"></span>LIVE';
+  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  if(h>0)return h+'h '+m+'m';
+  if(m>0)return m+'m '+String(sec).padStart(2,'0')+'s';
+  return String(sec).padStart(2,'0')+'s';
+}
+
+// TOURNAMENT CARD
+function makeTCard(t,compact=false){
+  const reg=state.registered.has(t.id);
+  const full=t.filled>=t.slots&&!reg;
+  const pct=Math.round((t.filled/t.slots)*100);
+  const modeClass='mode-'+t.mode;
+  const diffClass='diff-'+t.diff;
+  let btnClass=reg?'registered':full?'full':'can-join';
+  let btnText=reg?'✓ REGISTERED':full?'FULL':'JOIN';
+
+  const card=document.createElement('div');
+  card.className='t-card';
+  card.innerHTML=`
+    <div class="t-card-header">
+      <div class="t-name">${t.name}</div>
+      <span class="mode-badge ${modeClass}">${t.mode.toUpperCase()}</span>
+    </div>
+    <div class="t-card-body">
+      <div class="prize-row">
+        <div><div class="prize-label">Prize Pool</div><div class="prize-val">🪙 ${t.prize.toLocaleString()}</div></div>
+        <div style="text-align:right"><div class="prize-label">Entry</div><div class="entry-val">${t.entry===0?'FREE':'🪙 '+t.entry}</div></div>
+      </div>
+      <div class="slots-row">
+        <div class="slots-bar"><div class="slots-fill" style="width:${pct}%"></div></div>
+        <div class="slots-text">${t.filled}/${t.slots} slots</div>
+      </div>
+    </div>
+    <div class="t-card-footer">
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">STARTS IN</div>
+        <div class="countdown" id="cd-${t.id}">${fmtTime(t.countdown)}</div>
+      </div>
+      <span class="diff-badge ${diffClass}">${t.diff.toUpperCase()}</span>
+      <button class="join-btn ${btnClass}" id="jbtn-${t.id}">${btnText}</button>
+    </div>
+  `;
+
+  const btn=card.querySelector('#jbtn-'+t.id);
+  btn.onclick=e=>{
+    e.stopPropagation();
+    if(reg){showToast('Already registered!','info');return;}
+    if(full){showToast('Tournament is full!','error');return;}
+    if(t.state==='live'){showToast('Tournament already live!','error');return;}
+    openModal(t);
+  };
+  card.onclick=()=>openDetail(t);
+  return card;
+}
+
+// COUNTDOWN TICK
+function startCountdowns(){
+  Object.values(countdowns).forEach(clearInterval);
+  state.tournaments.forEach(t=>{
+    if(t.countdown>0){
+      countdowns[t.id]=setInterval(()=>{
+        t.countdown=Math.max(0,t.countdown-1);
+        const el=$('cd-'+t.id);
+        if(el)el.innerHTML=fmtTime(t.countdown);
+        if(t.countdown===300)showToast('⚠️ '+t.name+' starts in 5 mins!','info');
+        if(t.countdown===0){clearInterval(countdowns[t.id]);t.state='live';renderAll();}
+      },1000);
+    }
+  });
+}
+
+// RENDER HOME
+function renderHome(){
+  const el=$('home-tournaments');
+  el.innerHTML='';
+  const active=state.tournaments.filter(t=>t.state!=='completed').slice(0,3);
+  active.forEach(t=>el.appendChild(makeTCard(t,true)));
+}
+
+// RENDER TOURNAMENT LIST
+function renderTournaments(){
+  const el=$('tournament-list');
+  el.innerHTML='';
+  const mode=state.filterMode;
+  const filtered=mode==='all'?state.tournaments:state.tournaments.filter(t=>t.mode===mode);
+  filtered.forEach(t=>el.appendChild(makeTCard(t)));
+}
+
+// RENDER DETAIL
+function openDetail(t){
+  state.prevScreen=state.currentScreen;
+  state.selectedTournament=t;
+  $('detail-header-title').textContent=t.name;
+  const content=$('detail-content');
+  const reg=state.registered.has(t.id);
+  const showRoom=t.state==='live'||t.countdown<=900;
+  const prizes=[[1,'🥇',Math.floor(t.prize*.5)],[2,'🥈',Math.floor(t.prize*.3)],[3,'🥉',Math.floor(t.prize*.15)]];
+
+  content.innerHTML=`
+    <div class="detail-banner">
+      <div class="detail-t-name">${t.name}</div>
+      <div class="detail-mode">${t.mode.toUpperCase()} • ${t.diff.toUpperCase()}</div>
+      ${t.state==='live'?'<div style="margin-top:8px;font-size:12px;color:var(--red);font-family:Orbitron,monospace"><span class="live-dot"></span>MATCH IN PROGRESS</div>':''}
+    </div>
+    <div class="prize-table">
+      <div class="prize-header">🏆 PRIZE DISTRIBUTION</div>
+      ${prizes.map(([p,ico,amt])=>`<div class="prize-row-item"><div class="prize-place">${ico}</div><div class="prize-place-name">${p===1?'1st Place':p===2?'2nd Place':'3rd Place'}</div><div class="prize-amount">🪙 ${amt.toLocaleString()}</div></div>`).join('')}
+    </div>
+    ${showRoom&&reg?`
+    <div class="room-card">
+      <div class="room-label">🔐 ROOM CREDENTIALS</div>
+      <div class="room-field">
+        <div><div class="room-field-label">Room ID</div><div class="room-field-val">${t.roomId}</div></div>
+        <button class="copy-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${t.roomId}');showToast('Room ID copied!','success')">COPY</button>
+      </div>
+      <div class="room-field">
+        <div><div class="room-field-label">Password</div><div class="room-field-val">${t.roomPass}</div></div>
+        <button class="copy-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${t.roomPass}');showToast('Password copied!','success')">COPY</button>
+      </div>
+    </div>`:''}
+    ${showRoom&&!reg?`<div class="room-card" style="border-color:var(--border)"><div class="room-label" style="color:var(--muted)">🔒 ROOM CREDENTIALS</div><div style="font-size:13px;color:var(--muted);text-align:center;padding:12px 0">Register to unlock Room ID & Password</div></div>`:''}
+    <div class="rules-card">
+      <div class="rules-title">📋 MATCH RULES</div>
+      <div class="rule-item">Each kill = 10 points. Survival bonus up to 50pts.</div>
+      <div class="rule-item">Top 3 zones give bonus placement points.</div>
+      <div class="rule-item">No teaming, cheating or hacking — instant ban.</div>
+      <div class="rule-item">Submit kills within 10 mins after match ends.</div>
+      <div class="rule-item">Disconnection counts as elimination.</div>
+    </div>
+    <div style="margin:0 16px 20px">
+      <button class="join-btn ${reg?'registered':t.filled>=t.slots?'full':'can-join'}" style="width:100%;padding:16px;font-size:14px;border-radius:14px" id="detail-join-btn">${reg?'✓ REGISTERED':t.filled>=t.slots?'TOURNAMENT FULL':'JOIN TOURNAMENT'}</button>
+    </div>
+  `;
+  const djBtn=$('detail-join-btn');
+  if(djBtn&&!reg&&t.filled<t.slots){
+    djBtn.onclick=()=>openModal(t);
+  }
+  switchScreen('detail');
+}
+
+$('back-btn').onclick=()=>switchScreen(state.prevScreen||'tournaments');
+
+// RENDER LEADERBOARD
+function renderLeaderboard(){
+  const el=$('leaderboard-content');
+  const sorted=[...state.leaderboard].sort((a,b)=>b.pts-a.pts);
+  const top3=sorted.slice(0,3);
+  const rest=sorted.slice(3);
+  const order=[1,0,2];
+  const ordered=order.map(i=>top3[i]);
+
+  let html=`<div class="podium">`;
+  const ranks=['2nd','1st','3rd'];
+  const cls=['podium-2','podium-1','podium-3'];
+  ordered.forEach((p,i)=>{
+    html+=`<div class="podium-item ${cls[i]}">
+      <div class="podium-avatar">${p.avatar}</div>
+      <div class="podium-rank">${ranks[i]}</div>
+      <div class="podium-name">${p.name}</div>
+      <div class="podium-pts">${p.pts.toLocaleString()}</div>
+      <div class="podium-base"></div>
+    </div>`;
+  });
+  html+=`</div>`;
+  el.innerHTML=html;
+
+  rest.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='lb-row'+(p.me?' me':'');
+    row.innerHTML=`
+      <div class="lb-rank">#${i+4}</div>
+      <div class="lb-avatar" style="background:${p.color}22;border:1px solid ${p.color}44">${p.avatar}</div>
+      <div class="lb-info">
+        <div class="lb-name">${p.name}${p.me?' <span style="font-size:10px;color:var(--orange)">(You)</span>':''}</div>
+        <div class="lb-detail">${p.kills} kills · ${p.wins} wins</div>
+      </div>
+      <div class="lb-pts">${p.pts.toLocaleString()}</div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// RENDER PROFILE
+function renderProfile(){
+  const el=$('profile-content');
+  el.innerHTML=`
+    <div class="profile-card">
+      <div class="big-avatar">⚡</div>
+      <div class="profile-name">PhantomX</div>
+      <div class="profile-uid">UID: 4829301827 · Server: IND</div>
+      <div class="level-badge">⭐ LEVEL 42 · PLATINUM</div>
+    </div>
+    <div class="profile-stats">
+      <div class="ps-card"><div class="ps-val">89</div><div class="ps-label">Matches</div></div>
+      <div class="ps-card"><div class="ps-val">30</div><div class="ps-label">Wins</div></div>
+      <div class="ps-card"><div class="ps-val" style="color:var(--gold)">2.77</div><div class="ps-label">K/D Ratio</div></div>
+      <div class="ps-card"><div class="ps-val">58</div><div class="ps-label">Top 3</div></div>
+    </div>
+    <div class="wallet-card">
+      <div class="wallet-label">💰 WALLET BALANCE</div>
+      <div class="wallet-bal" id="profile-coins">🪙 ${state.coins}</div>
+      <div class="wallet-btns">
+        <button class="wallet-btn add" onclick="addCoins()">+ ADD COINS</button>
+        <button class="wallet-btn withdraw" onclick="showToast('Minimum 1000 coins required','error')">WITHDRAW</button>
+      </div>
+    </div>
+    <div class="section-title">ACHIEVEMENTS</div>
+    <div class="achievements">
+      ${[['🔥','Booyah!',true],['💀','50 Kills',true],['🎯','Headshot',true],['⚡','Speed Kill',false],['👑','Champion',false],['🛡️','Survivor',true],['💎','Diamond',false]].map(([ic,nm,e])=>`<div class="ach-item"><div class="ach-icon ${e?'earned':''}">${ic}</div><div class="ach-name">${nm}</div></div>`).join('')}
+    </div>
+    <div class="section-title" style="margin-top:8px">MATCH HISTORY</div>
+    ${state.history.map(h=>`
+      <div class="history-item">
+        <div class="hist-icon" style="background:${h.color}">${h.icon}</div>
+        <div class="hist-info">
+          <div class="hist-name">${h.name}</div>
+          <div class="hist-detail">#${h.place} Placement · ${h.kills} Kills</div>
+        </div>
+        <div class="hist-earn ${h.earn>0?'pos':'neg'}">${h.earn>0?'+':''}${h.earn > 0 ? '🪙 '+h.earn : '🪙 '+h.earn}</div>
+      </div>`).join('')}
+  `;
+}
+
+function addCoins(){
+  state.coins+=200;
+  updateCoinDisplays();
+  renderProfile();
+  showToast('🪙 +200 coins added!','success');
+}
+window.addCoins=addCoins;
+
+// SCREEN SWITCHING
+function switchScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const target=$('screen-'+name);
+  if(target)target.classList.add('active');
+  state.currentScreen=name;
+
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.toggle('active',n.dataset.screen===name);
+  });
+
+  if(name==='leaderboard')renderLeaderboard();
+  if(name==='profile')renderProfile();
+  if(name==='home')renderHome();
+  if(name==='tournaments')renderTournaments();
+}
+
+// NAV CLICKS
+document.querySelectorAll('.nav-item[data-screen]').forEach(item=>{
+  item.onclick=()=>switchScreen(item.dataset.screen);
+});
+
+// FILTER TABS
+$('tournament-list').parentElement.previousElementSibling.querySelectorAll('.filter-tab').forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll('#screen-tournaments .filter-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    state.filterMode=tab.dataset.filter||'all';
+    renderTournaments();
+  };
+});
+
+// INIT
+function renderAll(){renderHome();renderTournaments();}
+renderAll();
+startCountdowns();
+updateCoinDisplays();
+
+// Notification demo
+setTimeout(()=>showToast('🔥 BOOYAH CUP starts in 15 mins!','info'),2000);
+setTimeout(()=>showToast('🪙 New tournament added: BERMUDA BLITZ','success'),6000);
+</script>
+</body>
+</html>
